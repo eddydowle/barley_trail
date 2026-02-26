@@ -1,0 +1,377 @@
+---
+title: "First_look_barley_aphid"
+author: "Eddy Dowle"
+date: "2026-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(RColorBrewer)
+```
+
+## Data
+
+Data comes from two trails.
+
+November–December – Method
+  -Barley planted: 25/11/25
+  -Moved to field each location: 6 trays × 12 plants 4/11/25
+  -Each plant grown from roughly ~120+ seeds
+Aphids introduced: 9/11/25
+~300 aphids per plant
+Those aphids were sourced from 3–4 donor barley plants and distributed into soil among the 120 plants.
+
+Pots were monitored weekly (every week so far); however, aphid numbers declined rapidly, with very low counts recorded after two weeks (perhaps not enough established). We therefore reset the trial, increasing the initial aphid numbers.
+
+January–February – Trial Two
+19th Jan all plants were removed.
+Experiment entirely re-set up with new plants 19/1/26. Half the plants were planted 22/12/25 (tall) and half planted on the 08/1/26. 
+In more controlled environments (in our shadehouse) on 5/1/26 aphids were added to the plants planted 22/12/25 (HALF). A heavily infested 15-20cm plant was placed next to 4 barley plants and left for the 14 days before transferred to the field.
+These barley plants were then put in the field and surveyed weekly and called short and tall. 
+A mass rain event happened the week we put the aphids on.
+
+From the 19//1/26 barley was surveyed 3 times a week (mon/wed/fri)
+
+```{r data}
+setwd("C:/Users/hrlexd/OneDrive - Plant and Food Research/Beneficial_insects/Aphid_work_2026")
+#data<-read_excel('Aphid data_2025_2026.xlsx',sheet='Data_clean_ejd')
+data<-read.table('Aphid data_2025_2026_data_clean_ejd.txt',sep='\t',header=T)
+metadata<-read.table('Aphid data_2025_2026_metadata_ejd.txt',sep='\t',header=T)
+```
+
+## Trail 1 
+
+November–December – Method testing
+This is only a short trail to test methods.
+
+Just exploring what different things look like over the two surveys:
+
+
+```{r trail 1}
+#just looking at trail one
+metadata_treat1<-metadata %>% filter(Tray1_barley.treatment==1)
+
+data_treat1<-data %>% filter(SampleName %in% metadata_treat1$Samplename)
+
+
+#aphid counts through time
+
+data_treat1_aphids<-data_treat1 %>% mutate(sum_counts=rowSums(across(where(is.numeric)))) %>% filter(Insect=='Wingless aphids')
+data_treat1_aphids<-left_join(data_treat1_aphids,metadata_treat1,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat1_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+theme_bw()+
+  scale_fill_manual(values=c('red','orange'))+
+  labs(x = "Date",
+       y = "Aphid counts (wingless)",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+#winged aphids
+
+data_treat1_aphids<-data_treat1 %>% mutate(sum_counts=rowSums(across(where(is.numeric)))) %>% filter(Insect=='Winged aphids')
+data_treat1_aphids<-left_join(data_treat1_aphids,metadata_treat1,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat1_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=c('red','orange'))+
+  labs(x = "Date",
+       y = "Aphid counts (winged)",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+
+#lacewings
+data_treat1_aphids<-data_treat1 %>% mutate(sum_counts=rowSums(across(where(is.numeric)))) %>% filter(Insect=='Lacewing adults')
+data_treat1_aphids<-left_join(data_treat1_aphids,metadata_treat1,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat1_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=c('red','orange'))+
+  labs(x = "Date",
+       y = "Lacewing adults",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+#lacewings
+data_treat1_aphids<-data_treat1 %>% mutate(sum_counts=rowSums(across(where(is.numeric)))) %>% filter(Insect=='Lacewing larvae')
+data_treat1_aphids<-left_join(data_treat1_aphids,metadata_treat1,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat1_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=c('red','orange'))+
+  labs(x = "Date",
+       y = "Lacewing larvae",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+```
+
+
+## Trail 2 
+
+January - Feb
+
+This was our first large scale trail. 
+
+There was a weather event between the Jan/21/26 and Jan/23/26 samples, a smaller scale weather event on the Feb/3/26 and another larger event on Feb/16/26. 
+
+Currently I have broken aphids up into winged and wingless and seperatly summed them together.
+Note aphid wingless are much more common than winded aphids
+
+
+```{r trail2a}
+metadata_treat2<-metadata %>% filter(Tray1_barley.treatment==2|Tray1_barley.treatment==3)
+
+metadata_treat2$Date <- factor(metadata_treat2$Date,levels=c('1/19/2026','1/21/2026','1/23/2026','1/26/2026','1/28/2026','1/30/2026','2/2/2026','2/4/2026','2/11/2026','2/19/2026'),ordered = T)
+
+data_treat2<-data %>% filter(SampleName %in% metadata_treat2$Samplename)
+
+###########################
+#aphid counts through time#
+###########################
+
+data_treat2_aphids<-data_treat2 %>% mutate(sum_counts=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% filter(Insect=='Wingless aphids')
+data_treat2_aphids<-left_join(data_treat2_aphids,metadata_treat2,by=c('SampleName'='Samplename'))
+
+my_palette = c( 'red',"#08306B","#08519C","#2171B5","#4292C6","#6BAED6","#9ECAE1","#C6DBEF","#DEEBF7","#F7FBFF")
+
+ggplot(data_treat2_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Aphid counts (wingless)",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+###############
+#winged aphids#
+###############
+
+data_treat2_aphids<-data_treat2 %>% mutate(sum_counts=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% filter(Insect=='Winged aphids')
+data_treat2_aphids<-left_join(data_treat2_aphids,metadata_treat2,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat2_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Aphid counts (winged)",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+############################
+#aphids wingless and winged#
+############################
+
+data_treat2_aphids<-data_treat2 %>% mutate(sum_counts_raw=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% filter(Insect=='Wingless aphids'|Insect=='Winged aphids') %>% select(SampleName,sum_counts_raw) %>% group_by(SampleName) %>% summarise(sum_counts = sum(sum_counts_raw))
+data_treat2_aphids<-left_join(data_treat2_aphids,metadata_treat2,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat2_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Aphid counts (winged & wingless)",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+```
+
+# Thrips
+
+The other pest species of note on the barley was thrips.
+Note Im not sure if farmers would spray barley for thrip infestations
+
+```{r trail2b}
+########
+#Thrips#
+########
+data_treat2_aphids<-data_treat2 %>% mutate(sum_counts=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% filter(Insect=='Thrips')
+data_treat2_aphids<-left_join(data_treat2_aphids,metadata_treat2,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat2_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Thrips",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+```
+
+# Natural enemies
+
+The other side of the coin is the natural enemies. The main natural enemies of note where lacewings. We counted them across lifestages but adults were more numerous (perhaps also easier to observe)
+
+```{r trail2c}
+
+##################
+#lacewings adults#
+##################
+
+data_treat2_aphids<-data_treat2 %>% mutate(sum_counts=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% filter(Insect=='Lacewing adults')
+data_treat2_aphids<-left_join(data_treat2_aphids,metadata_treat2,by=c('SampleName'='Samplename'))
+
+ggplot(data_treat2_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Lacewing adults",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+##################
+#lacewings larvae#
+##################
+
+data_treat2_aphids<-data_treat2 %>% mutate(sum_counts=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% filter(Insect=='Lacewing larvae')
+data_treat2_aphids<-left_join(data_treat2_aphids,metadata_treat2,by=c('SampleName'='Samplename'))
+
+
+ggplot(data_treat2_aphids,aes(x=Date,y=sum_counts,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Lacewing larvae",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+```
+
+# Diversity
+
+The other way to consider natural enemies would be by their raw counts (total summed). Or by the diversity (species richness in this case) of the species present
+
+```{r trail2d}
+###########
+#diversity#
+###########
+
+library(vegan)
+#looking at natural enemy diversity rather than individual species might be a better way to do it
+
+counts_wide<-data_treat2 %>% filter(!Insect=='Wingless aphids') %>% filter(!Insect=='Winged aphids') %>% filter(!Insect=='Thrips') %>% filter(!Insect=='Slugs') %>% filter(!Insect=='Spidermite') %>% filter(!Insect=='Hoverfly parasitoid') %>%  mutate(sum_counts=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% select(Insect, SampleName,sum_counts) %>% pivot_wider(names_from=Insect,values_from=sum_counts)%>% remove_rownames %>% column_to_rownames(var="SampleName")
+
+raw_counts_natenem<-counts_wide %>% mutate(sum_naturalenem_raw=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% select(sum_naturalenem_raw) %>%
+  rownames_to_column(var = "Samplename")
+
+raw_counts_natenem_df <- raw_counts_natenem %>% 
+  inner_join(metadata_treat2 )
+
+ggplot(raw_counts_natenem_df,aes(x=Date,y=sum_naturalenem_raw,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Natural enemy raw counts",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+#########################
+#species count by sample#
+#########################
+
+#there is several columns for the same species that has different life stages (e.g. ladybird, lacewing etc) so first need to sum those columns up into new columns then count species
+
+counts_wide_sp<-counts_wide %>% mutate(ladybird_sum = rowSums(across(starts_with("Ladybird")), na.rm = T)) %>% mutate(lacewing_sum = rowSums(across(starts_with("Lacewing")), na.rm = T)) %>% mutate(hoverfly_sum = rowSums(across(starts_with("Hoverfly")), na.rm = T)) %>% select(-'Lacewing adults' ,-'Lacewing eggs' ,-'Lacewing larvae' ,-'Ladybird adults' ,-'Ladybird eggs' ,-'Ladybird larave' ,-'Hoverfly adults',-'Hoverfly eggs',-'Hoverfly larvae')
+
+sppr<-specnumber(counts_wide_sp)
+
+head(sppr)
+
+sppr_df <- sppr %>% 
+  enframe() %>% 
+  inner_join(metadata_treat2, by = c("name" = "Samplename"))
+
+
+ggplot(sppr_df,aes(x=Date,y=value,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Natural enemy species counts",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+```
+
+# Tiller count
+
+When we ran this trail we counted pest/natural enemies for a period of time along with how many tillers we checked. We noted that in some countries it seemed that there was a suggested tiller level that growers could use to judge whether to spray or not. Its unclear to us whether this is commonly used in NZ but we can take the data back to average per tiller. 
+
+```{r trail2e}
+################################
+#look at aphid count per tiller#
+################################
+#as aphids were sampled the number of tillers checked was measured so that we could calculate the average aphid per tiller which might be useful is you want a per tiller method
+
+#aphid counts through time
+
+data_treat2_aphids<-data_treat2 %>% mutate(sum_counts=rowSums(across(where(is.numeric)),na.rm = TRUE)) %>% filter(Insect=='Wingless aphids')
+metadata_treat2<-metadata_treat2 %>% mutate(tiller_sum = rowSums(across(starts_with("Tillercount_")), na.rm = T))
+data_treat2_aphids<-left_join(data_treat2_aphids,metadata_treat2,by=c('SampleName'='Samplename'))
+
+data_treat2_aphids$aphid_per_tiller<-data_treat2_aphids$sum_counts/data_treat2_aphids$tiller_sum
+
+ggplot(data_treat2_aphids,aes(x=Date,y=aphid_per_tiller,fill=Date))+
+  geom_boxplot()+
+  facet_wrap(~Treatment)+
+  theme_bw()+
+  scale_fill_manual(values=my_palette)+
+  labs(x = "Date",
+       y = "Aphid counts (wingless) per tiller",
+       title = "Counts by boundary",
+       fill = "Date")+
+  theme(axis.text.x = element_text(angle = 90,size=7,hjust=1))
+
+#Exporting tables for John
+
+data_treat2_summed<-data_treat2 %>% mutate(insect_counts_sum=rowSums(across(where(is.numeric)),na.rm = TRUE))
+data_treat2_summed<-left_join(data_treat2_summed,metadata_treat2,by=c('SampleName'='Samplename'))
+#clean tables up
+data_treat2_summed<-data_treat2_summed %>% select(-starts_with("Tray"))
+
+#Natural enememy species richness table table incase its of use
+
+sppr_df_tab<-sppr_df %>% select(-starts_with("Tray")) %>% rename(NE_species_richness = value) %>% select(-starts_with("Tillercount"))
+
+write.table(data_treat2_summed,'Counts_by_taxa_for_john_26_feb_2026.txt',sep='\t',row.names=F,quote=F)
+write.table(sppr_df_tab,'NaturalEnemy_richnessvalues_for_john_26_feb_2026.txt',sep='\t',row.names=F,quote=F)
+
+#code to https://github.com/eddydowle/barley_trail
+```
+
+We can do some proper statistics on whether there is significant differences between the boundary types for the pests/natural enemies but I havent gotten around to that at this stage. I can probably make time to do this in March. 
+
+
